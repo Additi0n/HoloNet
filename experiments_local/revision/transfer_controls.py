@@ -32,14 +32,11 @@ from _common import safe_load, build_model_from_ckpt  # noqa: E402
 from transfer_probe import extract_features, linear_probe  # noqa: E402
 from holonet.data import _scan_split, MalwareImageDataset, _build_transforms  # noqa: E402
 from holonet.model import HoloNet  # noqa: E402
+from runs import run_dir  # noqa: E402
 
 DATA = ROOT / "RGBA"
 DATASETS = ("BODMAS", "CICMalDroid2020", "ELF2020")
-TRAINED = {
-    42: {d: ROOT / "all_results" / "runs" / f"holonet_{d.lower()}" for d in DATASETS},
-    1: {d: ROOT / "runs" / "variance" / f"var_{d.lower()}_s1" for d in DATASETS},
-    2: {d: ROOT / "runs" / "variance" / f"var_{d.lower()}_s2" for d in DATASETS},
-}
+TRAINED = {s: {d: run_dir("full", d, s) for d in DATASETS} for s in (42, 1, 2)}
 RANDOM_INITS = (0, 1, 2, 3, 4)
 DEVICE = torch.device("cuda")
 # the fused nn.TransformerEncoder inference path crashed (illegal memory access)

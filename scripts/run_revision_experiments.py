@@ -4,8 +4,9 @@ Runs every job through train.py under the original protocol (200 epochs, AdamW
 3e-4, cosine, batch 32, label smoothing 0.05, best-val-Macro-F1 checkpoint) and
 skips jobs whose history.json already exists, so the script can be restarted.
 
-Seeds 42, 1 and 2 of the full model already exist (all_results/runs and
-runs/variance), as do seed-42 ablations; only the missing runs are queued.
+Runs trained for the original submission (seeds 42, 1, 2 of the full model and the
+seed-42 ablations, in all_results/runs and runs/variance) are reused when present;
+on a fresh checkout, or with --from-scratch, they are trained here as well.
 
 The queue is rebuilt from runs/revision/plan.json each time a worker picks a job,
 so seeds and the baselines retrained on the grouped split can be changed without
@@ -14,7 +15,7 @@ in-process augmentation by day (low CPU use), multi-process loading at night
 (faster, high CPU use). Running jobs are stopped at the switch and resumed from
 last.pt in the new mode; both paths give the same images and augmentation.
 
-    python scripts/run_revision_experiments.py [--workers 2] [--dry-run]
+    python scripts/run_revision_experiments.py [--workers 2] [--dry-run] [--from-scratch]
 """
 from __future__ import annotations
 
@@ -28,6 +29,9 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "experiments_local" / "revision"))
+from runs import legacy_dir  # noqa: E402
+
 OUT = ROOT / "runs" / "revision"
 LOGS = OUT / "logs"
 PLAN = OUT / "plan.json"
@@ -45,8 +49,6 @@ VARIANTS = {
     "dynamic_routing": ["--router", "dynamic"],
     "no_capsule": ["--router", "token"],
 }
-# seeds already trained elsewhere for each variant
-EXISTING = {"full": {42, 1, 2}, "no_ckan": {42}, "no_transformer": {42}, "no_margin": {42}}
 
 DEFAULT_PLAN = {
     "holonet_seeds": [42, 1, 2, 3, 4],
@@ -77,9 +79,9 @@ def all_jobs(plan: dict) -> list[tuple[str, list[str]]]:
     jobs = []
     for seed in plan["holonet_seeds"]:  # seed-major, so complete seed sets finish first
         for variant, flags in VARIANTS.items():
-            if seed in EXISTING.get(variant, set()):
-                continue
             for ds in DATASETS:
+                if legacy_dir(variant, ds, seed) is not None:
+                    continue  # trained for the original submission
                 jobs.append((f"holonet_{variant}_{ds.lower()}_s{seed}", ["--dataset", ds, "--seed", str(seed), *flags]))
     grouped = ["--data-root", "RGBA_grouped"]
     for seed in plan["grouped_seeds"]:
@@ -196,7 +198,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--from-scratch", action="store_true",
+                        help="ignore the pre-revision runs and train every job here")
     args = parser.parse_args()
+    if args.from_scratch:
+        os.environ["HOLONET_FROM_SCRATCH"] = "1"  # read by runs.legacy_dir, also in the analysis scripts
     LOGS.mkdir(parents=True, exist_ok=True)
     plan = load_plan()
     jobs = all_jobs(plan)

@@ -101,7 +101,7 @@ $env:RES2NET_SOURCE = "C:\path\to\Res2Net-PretrainedModels\res2net_v1b.py"
 
 ## Reproducing the Revision Experiments
 
-`scripts/run_revision_experiments.py` runs every training job of the revised paper under one protocol (200 epochs, AdamW 3e-4, cosine schedule, batch size 32, label smoothing 0.05, best-validation-Macro-F1 checkpoint): HoloNet and its ablations over five seeds, the five image baselines over three seeds, the input-channel ablation and the near-duplicate-grouped split. It resumes interrupted jobs from `last.pt` and skips finished ones:
+`scripts/run_revision_experiments.py` runs every training job of the revised paper under one protocol (200 epochs, AdamW 3e-4, cosine schedule, batch size 32, label smoothing 0.05, best-validation-Macro-F1 checkpoint): HoloNet and its ablations over five seeds, the five image baselines over three seeds, the input-channel ablation and the near-duplicate-grouped split. It resumes interrupted jobs from `last.pt` and skips finished ones. Runs from the original submission are reused when their folders (`all_results/`, `runs/variance/`) are present; on a fresh checkout they are trained as well, and `--from-scratch` forces this:
 
 ```powershell
 python scripts/run_revision_experiments.py --workers 2

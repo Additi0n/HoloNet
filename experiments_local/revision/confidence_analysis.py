@@ -13,15 +13,11 @@ from pathlib import Path
 
 import numpy as np
 
+from runs import run_dir
+
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
 EPS = 0.05
-RUNS = {
-    "BODMAS": ["all_results/runs/holonet_bodmas", "runs/variance/var_bodmas_s1", "runs/variance/var_bodmas_s2"],
-    "CICMalDroid2020": ["all_results/runs/holonet_cicmaldroid2020", "runs/variance/var_cicmaldroid2020_s1",
-                        "runs/variance/var_cicmaldroid2020_s2"],
-    "ELF2020": ["all_results/runs/holonet_elf2020", "runs/variance/var_elf2020_s1", "runs/variance/var_elf2020_s2"],
-}
+RUNS = {ds: [run_dir("full", ds, s) for s in (42, 1, 2)] for ds in ("BODMAS", "CICMalDroid2020", "ELF2020")}
 
 
 def ranks(x: np.ndarray) -> np.ndarray:
@@ -78,7 +74,7 @@ def one(npz: Path) -> dict:
 def main() -> None:
     out = {}
     for ds, runs in RUNS.items():
-        per_seed = [one(ROOT / r / "test_predictions.npz") for r in runs]
+        per_seed = [one(r / "test_predictions.npz") for r in runs]
         keys = [k for k in per_seed[0] if k != "n"]
         out[ds] = {"per_seed": per_seed,
                    "mean": {k: round(float(np.mean([s[k] for s in per_seed])), 4) for k in keys},

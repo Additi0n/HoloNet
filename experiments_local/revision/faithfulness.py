@@ -26,13 +26,14 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT)); sys.path.insert(0, str(ROOT / "experiments_local"))
 from _common import safe_load, build_model_from_ckpt  # noqa: E402
 from holonet.data import _scan_split, MalwareImageDataset, _build_transforms  # noqa: E402
+from runs import run_dir  # noqa: E402
 
 DEVICE = torch.device("cuda")
 # the fused nn.TransformerEncoder inference path crashed (illegal memory access)
 # while sharing the GPU with training jobs; the standard path gives the same outputs
 torch.backends.mha.set_fastpath_enabled(False)
 STEPS = 20
-RUNS = {d: ROOT / "all_results" / "runs" / f"holonet_{d.lower()}" for d in ("BODMAS", "CICMalDroid2020", "ELF2020")}
+RUNS = {d: run_dir("full", d, 42) for d in ("BODMAS", "CICMalDroid2020", "ELF2020")}
 ZERO = -1.0  # raw byte 0 after Normalize(mean=0.5, std=0.5)
 # replacement for removed pixels: "zero" bytes, or a Gaussian-blurred copy of the image
 # (RISE's choice), which is not a no-op on regions that already hold zero bytes

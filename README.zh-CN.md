@@ -98,7 +98,7 @@ $env:RES2NET_SOURCE = "C:\path\to\Res2Net-PretrainedModels\res2net_v1b.py"
 
 ## 复现修改稿实验
 
-`scripts/run_revision_experiments.py` 按统一协议（200 个 epoch、AdamW 3e-4、余弦退火、批大小 32、标签平滑 0.05、按验证集 Macro-F1 选检查点）运行修改稿的全部训练任务：HoloNet 及其消融（5 个种子）、五个图像基线（3 个种子）、输入通道消融和按近重复分组的划分。中断的任务从 `last.pt` 续跑，已完成的任务自动跳过：
+`scripts/run_revision_experiments.py` 按统一协议（200 个 epoch、AdamW 3e-4、余弦退火、批大小 32、标签平滑 0.05、按验证集 Macro-F1 选检查点）运行修改稿的全部训练任务：HoloNet 及其消融（5 个种子）、五个图像基线（3 个种子）、输入通道消融和按近重复分组的划分。中断的任务从 `last.pt` 续跑，已完成的任务自动跳过。原稿阶段训练的结果（`all_results/`、`runs/variance/`）存在时直接复用；在新克隆的仓库中这些任务也会一并训练，加 `--from-scratch` 可强制全部重新训练：
 
 ```powershell
 python scripts/run_revision_experiments.py --workers 2

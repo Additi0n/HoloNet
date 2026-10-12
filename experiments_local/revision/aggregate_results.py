@@ -1,9 +1,8 @@
 """Collect all runs, report mean +- std over seeds and test each model against
 HoloNet (R3-9).
 
-Seeds 42, 1, 2 of the full model come from all_results/runs and runs/variance,
-seed-42 ablations from all_results/runs, everything else from runs/revision.
-Missing test_predictions.npz files are generated first.
+Run folders are resolved by runs.run_dir (pre-revision runs if present, otherwise
+runs/revision). Missing test_predictions.npz files are generated first.
 
 Two tests per comparison: Welch's t-test over seed-level Macro-F1, and McNemar's
 exact test on per-sample correctness for each shared seed (reported as the number
@@ -23,29 +22,12 @@ from pathlib import Path
 import numpy as np
 from scipy import stats
 
+from runs import HOLONET_VARIANTS, REV, ROOT, run_dir  # noqa: F401  (REV, ROOT re-exported)
+
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
-REV = ROOT / "runs" / "revision"
 DATASETS = ("BODMAS", "CICMalDroid2020", "ELF2020")
 SEEDS = (42, 1, 2, 3, 4)
-MODELS = ("full", "no_ckan", "no_transformer", "no_margin", "dynamic_routing", "no_capsule",
-          "resnext50", "resnext_cbam", "res2net50", "convnext_tiny", "vit_s8")
-
-
-def run_dir(model: str, ds: str, seed: int) -> Path:
-    d = ds.lower()
-    legacy = {
-        ("full", 42): ROOT / "all_results/runs" / f"holonet_{d}",
-        ("full", 1): ROOT / "runs/variance" / f"var_{d}_s1",
-        ("full", 2): ROOT / "runs/variance" / f"var_{d}_s2",
-        ("no_ckan", 42): ROOT / "all_results/runs" / f"ablation_no_ckan_{d}_no_ckan",
-        ("no_transformer", 42): ROOT / "all_results/runs" / f"ablation_no_transformer_{d}_no_transformer",
-        ("no_margin", 42): ROOT / "all_results/runs" / f"ablation_no_margin_{d}_no_margin",
-    }
-    if (model, seed) in legacy:
-        return legacy[(model, seed)]
-    prefix = "holonet_" if model in MODELS[:6] else "base_"
-    return REV / f"{prefix}{model}_{d}_s{seed}"
+MODELS = HOLONET_VARIANTS + ("resnext50", "resnext_cbam", "res2net50", "convnext_tiny", "vit_s8")
 
 
 def macro_f1(y, p, k):

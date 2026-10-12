@@ -24,6 +24,10 @@
 - holonet/losses.py: 交叉熵 + Capsule margin loss
 - holonet/metrics.py: 准确率、宏平均 Precision/Recall/F1
 
+### 预处理
+
+- preprocessing/bin2img.py: 将可执行文件转换为 96x96 RGBA 图像（Bin2Img）
+
 ### 入口脚本（在项目根目录运行）
 
 - train.py: 训练与测试入口
@@ -38,6 +42,7 @@ hOlo/
 ├── README.md, requirements.txt   # 说明与依赖
 ├── train.py, run_*.py            # 入口脚本（在根目录运行）
 ├── holonet/                      # 核心代码包（模型 / 数据 / 损失 / 指标）
+├── preprocessing/                # Bin2Img 转换脚本（bin2img.py）
 ├── RGBA/                         # 数据集（BODMAS / CICMalDroid2020 / ELF2020）
 ├── experiments/                  # 实验配置（ablation_suite.json 等）
 ├── scripts/                      # 辅助脚本（批量实验、配图生成工具）
@@ -71,6 +76,35 @@ python -m pip install -r requirements.txt
 ```
 
 如果需要 GPU 版本的 PyTorch，建议先按官方方式安装对应 CUDA 版本的 torch 和 torchvision，再补装其余依赖。
+
+## 数据准备（Bin2Img）
+
+`preprocessing/bin2img.py` 分两步把可执行文件转成 96x96 的 RGBA 输入图像。每个数据集按 `<划分>/<类别>/<文件>` 组织：
+
+```powershell
+python preprocessing/bin2img.py convert RAW/BODMAS/train RawIMG/BODMAS/train
+python preprocessing/bin2img.py resize  RawIMG/BODMAS/train RGBA/BODMAS/train
+```
+
+`convert` 把每 4 个连续字节写成 n x n 图像中的一个 RGBA 像素（n = ceil(sqrt(len / 4))，不足补零，无损）；`resize` 用 Pillow 的默认滤波器缩放到 96x96，对 RGBA 图像是在预乘 alpha 上做双三次插值。`test` 划分和其他数据集同样处理。全部样本的 SHA-256/MD5 哈希清单及训练/测试归属见论文补充材料。
+
+## Res2Net 基线源码
+
+Res2Net-50 基线从官方 [Res2Net-PretrainedModels](https://github.com/Res2Net/Res2Net-PretrainedModels) 仓库加载 `res2net_v1b.py`，受其许可证限制不在本仓库中分发。请先克隆该仓库，再用环境变量 `RES2NET_SOURCE` 指向该文件：
+
+```powershell
+$env:RES2NET_SOURCE = "C:\path\to\Res2Net-PretrainedModels\res2net_v1b.py"
+```
+
+## 复现修改稿实验
+
+`scripts/run_revision_experiments.py` 按统一协议（200 个 epoch、AdamW 3e-4、余弦退火、批大小 32、标签平滑 0.05、按验证集 Macro-F1 选检查点）运行修改稿的全部训练任务：HoloNet 及其消融（5 个种子）、五个图像基线（3 个种子）、输入通道消融和按近重复分组的划分。中断的任务从 `last.pt` 续跑，已完成的任务自动跳过：
+
+```powershell
+python scripts/run_revision_experiments.py --workers 2
+```
+
+之后用 `experiments_local/revision/` 中的分析脚本得到文中的数字：`grouped_split.py`（分组划分）、`nearest_neighbour.py` 和 `dedup_check.py`（重复分析）、`aggregate_results.py`（均值、Welch 与 McNemar 检验及 Holm 校正）、`efficiency_all.py --latency`（参数量、FLOPs、延迟）、`transfer_controls.py`、`confidence_analysis.py`、`faithfulness.py zero|blur` 和 `export_per_seed.py`。注意 `train.py` 默认 30 个 epoch，论文使用 200 个。
 
 ## 训练单个数据集
 

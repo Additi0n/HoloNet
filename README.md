@@ -24,6 +24,10 @@ The code reads the RGBA dataset directories in the workspace directly:
 - holonet/losses.py: cross-entropy + capsule margin loss
 - holonet/metrics.py: accuracy and macro-averaged Precision/Recall/F1
 
+### Preprocessing
+
+- preprocessing/bin2img.py: Bin2Img conversion of executables to 96x96 RGBA images
+
 ### Entry scripts (run from the project root)
 
 - train.py: training and testing entry point
@@ -38,6 +42,7 @@ hOlo/
 ├── README.md, requirements.txt   # documentation and dependencies
 ├── train.py, run_*.py            # entry scripts (run from the root)
 ├── holonet/                      # core package (model / data / losses / metrics)
+├── preprocessing/                # Bin2Img conversion (bin2img.py)
 ├── RGBA/                         # datasets (BODMAS / CICMalDroid2020 / ELF2020)
 ├── experiments/                  # experiment configs (ablation_suite.json, etc.)
 ├── scripts/                      # helper scripts (batch experiments, figure tools)
@@ -54,7 +59,7 @@ hOlo/
 > Note: `runs/` holds outputs written live by the scripts, `all_results/` holds archived raw results,
 > and `result_tables/` holds summary tables curated from them. The three serve different purposes.
 >
-> Datasets (`RGBA*/`), run outputs (`runs/`, `all_results/`), checkpoints, the manuscript (`article/`),
+> Datasets (`RGBA*/`), run outputs (`runs/`, `all_results/`), experiment results (`experiments_local/**/results/`, `result_tables/`), checkpoints, the manuscript (`article/`),
 > reference papers and presentation material are not included in this repository.
 
 ## Model Architecture
@@ -74,6 +79,35 @@ python -m pip install -r requirements.txt
 ```
 
 For a GPU build of PyTorch, first install torch and torchvision for your CUDA version following the official instructions, then install the remaining dependencies.
+
+## Preparing the Data (Bin2Img)
+
+`preprocessing/bin2img.py` turns executables into the 96x96 RGBA input images in two steps. Each dataset is laid out as `<split>/<class>/<file>`:
+
+```powershell
+python preprocessing/bin2img.py convert RAW/BODMAS/train RawIMG/BODMAS/train
+python preprocessing/bin2img.py resize  RawIMG/BODMAS/train RGBA/BODMAS/train
+```
+
+`convert` packs 4 consecutive bytes into one RGBA pixel of an n x n image (n = ceil(sqrt(len / 4)), zero-padded, lossless). `resize` scales it to 96x96 with Pillow's default filter, which is bicubic and works on premultiplied alpha for RGBA images. Repeat for the `test` split and the other datasets. The SHA-256/MD5 hash lists and train/test assignments of every sample are provided with the paper's Supplementary Material.
+
+## Res2Net Baseline Source
+
+The Res2Net-50 baseline loads `res2net_v1b.py` from the official [Res2Net-PretrainedModels](https://github.com/Res2Net/Res2Net-PretrainedModels) repository, which is not redistributed here because of its licence. Clone that repository and point the `RES2NET_SOURCE` environment variable to the file:
+
+```powershell
+$env:RES2NET_SOURCE = "C:\path\to\Res2Net-PretrainedModels\res2net_v1b.py"
+```
+
+## Reproducing the Revision Experiments
+
+`scripts/run_revision_experiments.py` runs every training job of the revised paper under one protocol (200 epochs, AdamW 3e-4, cosine schedule, batch size 32, label smoothing 0.05, best-validation-Macro-F1 checkpoint): HoloNet and its ablations over five seeds, the five image baselines over three seeds, the input-channel ablation and the near-duplicate-grouped split. It resumes interrupted jobs from `last.pt` and skips finished ones:
+
+```powershell
+python scripts/run_revision_experiments.py --workers 2
+```
+
+The analysis scripts in `experiments_local/revision/` then produce the reported numbers: `grouped_split.py` (near-duplicate-grouped split), `nearest_neighbour.py` and `dedup_check.py` (duplicate analysis), `aggregate_results.py` (means, Welch and McNemar tests with Holm correction), `efficiency_all.py --latency` (parameters, FLOPs, latency), `transfer_controls.py`, `confidence_analysis.py`, `faithfulness.py zero|blur` and `export_per_seed.py`. Note that `train.py` defaults to 30 epochs; the paper uses 200.
 
 ## Training on a Single Dataset
 

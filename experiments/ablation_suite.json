@@ -1,0 +1,52 @@
+{
+  "description": "Ablation suite for HoloNet on RGBA malware datasets.",
+  "base_train_args": {
+    "epochs": 30,
+    "batch_size": 32,
+    "image_size": 96,
+    "num_workers": 4,
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "label_smoothing": 0.05,
+    "margin_weight": 0.25,
+    "amp": true,
+    "balanced_sampling": true,
+    "use_ckan": true,
+    "use_transformer_router": true,
+    "save_last": true,
+    "experiment_name": "holonet"
+  },
+  "experiments": [
+    {
+      "name": "holonet_full",
+      "description": "Full HoloNet with Conv-KAN, transformer router, and capsule margin loss.",
+      "train_args": {
+        "experiment_name": "holonet_full"
+      }
+    },
+    {
+      "name": "ablation_no_ckan",
+      "description": "Remove the Conv-KAN fine-grained feature block.",
+      "train_args": {
+        "experiment_name": "ablation_no_ckan",
+        "use_ckan": false
+      }
+    },
+    {
+      "name": "ablation_no_transformer",
+      "description": "Replace transformer routing with pooled capsule routing.",
+      "train_args": {
+        "experiment_name": "ablation_no_transformer",
+        "use_transformer_router": false
+      }
+    },
+    {
+      "name": "ablation_no_margin",
+      "description": "Disable capsule margin loss and keep only cross-entropy.",
+      "train_args": {
+        "experiment_name": "ablation_no_margin",
+        "margin_weight": 0.0
+      }
+    }
+  ]
+}

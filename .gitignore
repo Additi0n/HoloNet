@@ -1,0 +1,34 @@
+# --- Large data & generated artifacts (keep code in git, not multi-GB data) ---
+RGBA/
+RGBA_grouped/
+RGBA_grouped_noflat/
+runs/
+all_results/
+*.pt
+*.pth
+*.npz
+
+# --- Manuscript, third-party papers and talk material (not part of the code release) ---
+article/
+article.zip
+references/
+reports/
+
+# --- Python env / caches ---
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# --- LaTeX build artifacts ---
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.fls
+*.fdb_latexmk
+
+# --- Editor / tooling ---
+.vscode/
+.claude/

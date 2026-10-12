@@ -32,3 +32,7 @@ __pycache__/
 # --- Editor / tooling ---
 .vscode/
 .claude/
+
+make_framework_figure.py
+make_framework_vsdx.ps1
+make_paper_heatmaps.py
